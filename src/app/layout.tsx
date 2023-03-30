@@ -1,3 +1,4 @@
+import { AppProvider } from "@/lib/App";
 import "./globals.css";
 
 export const metadata = {
@@ -11,8 +12,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" data-theme="night">
-      <body>{children}</body>
+    <html>
+      <AppProvider>
+        <body>{children}</body>
+      </AppProvider>
     </html>
   );
 }
