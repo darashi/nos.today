@@ -100,9 +100,14 @@ export default function Search() {
 
         <div className="mt-8">
           {query && (
-            <p>
-              Search for <strong>{query}</strong> ({sortedNotes.length} hits)
-            </p>
+            <div className="flex align-middle">
+              <div>
+                Search for <strong>{query}</strong> ({sortedNotes.length} hits)
+              </div>
+              <div className="relative flex h-3 w-3 ml-2 my-auto">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+              </div>
+            </div>
           )}
         </div>
 
