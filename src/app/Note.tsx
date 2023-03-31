@@ -24,7 +24,7 @@ function formatDatetime(date: Date, currentTime: Date) {
   const sec = differenceInSeconds(currentTime, date);
 
   if (sec < 60) {
-    return "";
+    return "<1m";
   } else if (sec < 60 * 60) {
     return differenceInMinutes(currentTime, date) + "m";
   } else if (isSameDay(currentTime, date)) {
