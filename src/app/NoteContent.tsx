@@ -1,8 +1,7 @@
 import { Event } from "nostr-mux";
 import { marked } from "marked";
 import DOMPurify from "dompurify";
-import { parseReferences } from "nostr-tools";
-import { bech32 } from "@scure/base";
+import { parseReferences, nip19 } from "nostr-tools";
 
 type Props = {
   note: Event;
@@ -10,18 +9,14 @@ type Props = {
 
 marked.setOptions({ breaks: true });
 
-function hexToBech32(prefix: string, hex: string) {
-  const words = bech32.toWords(Buffer.from(hex, "hex"));
-  return bech32.encode(prefix, words);
-}
-
 export const NoteContent = ({ note }: Props) => {
+  // Expand NIP-27
   let content = note.content;
   const parsed = parseReferences(note);
   for (const ref of parsed) {
     let bech32 = "";
     if (ref.profile) {
-      bech32 = hexToBech32("npub", ref.profile.pubkey);
+      bech32 = nip19.npubEncode(ref.profile.pubkey);
     }
     // TODO better embedding of references
 
