@@ -7,7 +7,15 @@ type Props = {
   note: Event;
 };
 
-marked.setOptions({ breaks: true });
+DOMPurify.addHook("afterSanitizeAttributes", function (node) {
+  if (node.tagName === "A") {
+    const href = node.getAttribute("href");
+    if (href && !href.startsWith("nostr:")) {
+      node.setAttribute("target", "_blank");
+      node.setAttribute("rel", "noopener");
+    }
+  }
+});
 
 export const NoteContent = ({ note }: Props) => {
   // Expand NIP-27
