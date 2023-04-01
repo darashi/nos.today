@@ -64,7 +64,7 @@ export const Note = ({ note }: Props) => {
               </div>
               <div className="flex-none text-sm">
                 <Link href={noteUri}>
-                  <span title={date.toISOString()}>
+                  <span title={date.toISOString()} className="text-primary">
                     {formatDatetime(date, app.currentTime)}
                   </span>
                 </Link>

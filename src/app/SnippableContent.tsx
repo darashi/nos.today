@@ -46,7 +46,10 @@ export const SnippableContent = ({ note }: Props) => {
     if (isExpanded) {
       return (
         <div>
-          <div dangerouslySetInnerHTML={{ __html: contentHTML }} />
+          <div
+            dangerouslySetInnerHTML={{ __html: contentHTML }}
+            className="prose-a:text-primary"
+          />
           <div className="mt-2 w-full">
             <button
               className="link link-primary btn-link"
@@ -75,5 +78,10 @@ export const SnippableContent = ({ note }: Props) => {
     );
   }
 
-  return <div dangerouslySetInnerHTML={{ __html: contentHTML }} />;
+  return (
+    <div
+      className="prose-a:text-primary"
+      dangerouslySetInnerHTML={{ __html: contentHTML }}
+    />
+  );
 };
