@@ -15,7 +15,13 @@ export default function Home() {
 
         <h2>nos.today</h2>
 
-        <p>nos.today is a Nostr search web client.</p>
+        <p>
+          nos.today is a Nostr search web client.{" "}
+          <a href="https://github.com/darashi/nos.today">
+            https://github.com/darashi/nos.today
+          </a>
+        </p>
+
         <p>Events are retrieved from the following relays:</p>
 
         <ul>
