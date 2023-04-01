@@ -1,3 +1,5 @@
+"use client";
+
 import { Event } from "nostr-mux";
 import { marked } from "marked";
 import DOMPurify from "dompurify";
@@ -7,15 +9,17 @@ type Props = {
   note: Event;
 };
 
-DOMPurify.addHook("afterSanitizeAttributes", function (node) {
-  if (node.tagName === "A") {
-    const href = node.getAttribute("href");
-    if (href && !href.startsWith("nostr:")) {
-      node.setAttribute("target", "_blank");
-      node.setAttribute("rel", "noopener");
+if (typeof window !== "undefined") {
+  DOMPurify.addHook("afterSanitizeAttributes", function (node) {
+    if (node.tagName === "A") {
+      const href = node.getAttribute("href");
+      if (href && !href.startsWith("nostr:")) {
+        node.setAttribute("target", "_blank");
+        node.setAttribute("rel", "noopener");
+      }
     }
-  }
-});
+  });
+}
 
 export const NoteContent = ({ note }: Props) => {
   // Expand NIP-27
