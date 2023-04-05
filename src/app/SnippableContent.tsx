@@ -1,12 +1,13 @@
 import { Event } from "nostr-mux";
-import { useState } from "react";
+import { MouseEventHandler, useState } from "react";
 import { NoteContent } from "./NoteContent";
 
 type Props = {
   note: Event;
+  onNoteBodyClick: MouseEventHandler<HTMLDivElement>;
 };
 
-export const SnippableContent = ({ note }: Props) => {
+export const SnippableContent = ({ note, onNoteBodyClick }: Props) => {
   const lengthThreshold = 256;
   const [isExpanded, setIsExpanded] = useState(false);
   const isLong = note.content.length > lengthThreshold;
@@ -15,7 +16,7 @@ export const SnippableContent = ({ note }: Props) => {
     if (isExpanded) {
       return (
         <div>
-          <NoteContent note={note} />
+          <NoteContent note={note} onClick={onNoteBodyClick} />
           <div className="mt-2 w-full">
             <button
               className="link link-primary btn-link"
@@ -29,9 +30,11 @@ export const SnippableContent = ({ note }: Props) => {
     }
     return (
       <div>
-        {isExpanded
-          ? note.content
-          : note.content.slice(0, lengthThreshold) + "..."}
+        <div onClick={onNoteBodyClick}>
+          {isExpanded
+            ? note.content
+            : note.content.slice(0, lengthThreshold) + "..."}
+        </div>
         <div className="mt-2 w-full">
           <button
             className="link link-primary btn-link"
@@ -44,5 +47,5 @@ export const SnippableContent = ({ note }: Props) => {
     );
   }
 
-  return <NoteContent note={note} />;
+  return <NoteContent note={note} onClick={onNoteBodyClick} />;
 };

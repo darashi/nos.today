@@ -3,7 +3,7 @@
 
 import { useApp } from "@/lib/App";
 import { Event, GenericProfile, Profile } from "nostr-mux";
-import { useEffect, useState } from "react";
+import { MouseEventHandler, useEffect, useState } from "react";
 import { Avatar } from "./Avatar";
 import {
   differenceInMinutes,
@@ -46,6 +46,14 @@ export const Note = ({ note }: Props) => {
   const pubkeyUri = "nostr:" + encodeBech32ID("npub", note.pubkey);
   const noteUri = "nostr:" + encodeBech32ID("note", note.id);
 
+  const handleNoteBodyClick: MouseEventHandler<HTMLDivElement> = (e) => {
+    if (e.target instanceof HTMLAnchorElement) {
+      // Anchors have priority. We do not have to navigate to the note.
+      return;
+    }
+    window.location.replace(noteUri);
+  };
+
   return (
     <div key={note.id} className="card card-bordered shadow-lg my-3">
       <div className="card-body break-all p-5">
@@ -71,7 +79,10 @@ export const Note = ({ note }: Props) => {
               </div>
             </div>
             <Nip36Protection note={note}>
-              <SnippableContent note={note} />
+              <SnippableContent
+                note={note}
+                onNoteBodyClick={handleNoteBodyClick}
+              />
             </Nip36Protection>
           </div>
         </div>

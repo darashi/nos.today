@@ -4,9 +4,11 @@ import { Event } from "nostr-mux";
 import { marked } from "marked";
 import DOMPurify from "dompurify";
 import { parseReferences, nip19 } from "nostr-tools";
+import { MouseEventHandler } from "react";
 
 type Props = {
   note: Event;
+  onClick: MouseEventHandler<HTMLDivElement>;
 };
 
 if (typeof window !== "undefined") {
@@ -21,7 +23,7 @@ if (typeof window !== "undefined") {
   });
 }
 
-export const NoteContent = ({ note }: Props) => {
+export const NoteContent = ({ note, onClick }: Props) => {
   // Expand NIP-27
   let content = note.content;
   const parsed = parseReferences(note);
@@ -45,7 +47,8 @@ export const NoteContent = ({ note }: Props) => {
   });
   return (
     <div
-      className="prose-a:text-primary"
+      className="cursor-pointer prose-a:text-primary"
+      onClick={onClick}
       dangerouslySetInnerHTML={{ __html: contentHTML }}
     />
   );
