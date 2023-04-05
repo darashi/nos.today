@@ -1,11 +1,11 @@
 # nos.today
-nos.today is a Nostr search web client. https://github.com/darashi/nos.today
 
-Events are retrieved from the following relays:
+nos.today is a Nostr search web client.
+It provides full-text search of Nostr notes using NIP-50 compliant relays.
+https://github.com/darashi/nos.today
 
-- wss://search.nos.today (NIP-50 supported)
-- wss://relay.nostr.band (NIP-50 supported)
-- wss://relay.damus.io
-- wss://nos.lol
+You can try it working at [https://nos.today](https://nos.today).
+
+For more information, including a list of relays used, see [https://nos.today/about](https://nos.today/about).
 
 nos.today is built by @darashi. npub1q7qyk7rvdga5qzmmyrvmlj29qd0n45snmfuhkrzsj4rk0sm4c4psvqwt9c
