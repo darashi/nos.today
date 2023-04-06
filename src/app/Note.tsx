@@ -101,21 +101,23 @@ export const Note = ({ note }: Props) => {
                   )}
                 </a>
               </div>
-              <div className="flex-1">
+
+              <div className="flex-1 mr-5">
                 <a href={pubkeyUri}>
                   <strong>{profile?.properties.displayName}</strong>{" "}
                   {profile?.properties.name && "@" + profile?.properties.name}
                 </a>
-                <span className="ml-1">
+                <span>
                   {npub && <CopyButton text={npub} title="Copy author npub" />}
                 </span>
               </div>
+
               <div>
                 <span title={date.toISOString()} className="text-sm">
                   {formatDatetime(date, app.currentTime)}
                 </span>
               </div>
-              <div className="ml-1">
+              <div>
                 {noteId && <CopyButton text={noteId} title="Copy note Id" />}
               </div>
             </div>
