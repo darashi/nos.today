@@ -14,6 +14,7 @@ import {
 import { SnippableContent } from "./SnippableContent";
 import { encodeBech32ID } from "nostr-mux/dist/core/utils";
 import { Nip36Protection } from "./Nip36Protection";
+import { NoteDropdownMenu } from "./NoteDropdownMenu";
 
 type Props = {
   note: Event;
@@ -59,7 +60,7 @@ export const Note = ({ note }: Props) => {
         <div className="flex gap-3">
           <Avatar pubkeyUri={pubkeyUri} profile={profile} />
           <div className="flex flex-col w-full gap-2">
-            <div className="flex flex-row">
+            <div className="flex flex-row items-baseline">
               <div className="flex-1 text-sm">
                 <a href={pubkeyUri}>
                   {!profile && (
@@ -69,12 +70,13 @@ export const Note = ({ note }: Props) => {
                   {profile?.properties.name && "@" + profile?.properties.name}
                 </a>
               </div>
-              <div className="flex-none text-sm">
-                <Link href={noteUri}>
-                  <span title={date.toISOString()} className="text-primary">
-                    {formatDatetime(date, app.currentTime)}
-                  </span>
-                </Link>
+              <div>
+                <span title={date.toISOString()} className="text-sm">
+                  {formatDatetime(date, app.currentTime)}
+                </span>
+              </div>
+              <div>
+                <NoteDropdownMenu note={note} />
               </div>
             </div>
             <Nip36Protection note={note}>
