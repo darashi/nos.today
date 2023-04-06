@@ -93,7 +93,7 @@ export const Note = ({ note }: Props) => {
         <div className="flex gap-3">
           <Avatar pubkeyUri={pubkeyUri} profile={profile} />
           <div className="flex flex-col w-full gap-2">
-            <div className="flex flex-row items-center">
+            <div className="flex flex-row items-top">
               <div className="flex-none text-sm">
                 <a href={pubkeyUri}>
                   {!profile && (
@@ -102,23 +102,20 @@ export const Note = ({ note }: Props) => {
                 </a>
               </div>
 
-              <div className="flex-1 mr-5">
+              <div className="flex-1 mr-4">
                 <a href={pubkeyUri}>
                   <strong>{profile?.properties.displayName}</strong>{" "}
                   {profile?.properties.name && "@" + profile?.properties.name}
                 </a>
-                <span>
+                <span className="ml-1">
                   {npub && <CopyButton text={npub} title="Copy author npub" />}
                 </span>
               </div>
 
               <div>
-                <span title={date.toISOString()} className="text-sm">
+                <span title={date.toISOString()} className="text-sm flex-none">
                   {formatDatetime(date, app.currentTime)}
                 </span>
-              </div>
-              <div>
-                {noteId && <CopyButton text={noteId} title="Copy note Id" />}
               </div>
             </div>
             <Nip36Protection note={note}>
@@ -128,6 +125,9 @@ export const Note = ({ note }: Props) => {
               />
             </Nip36Protection>
           </div>
+        </div>
+        <div className="text-right">
+          {noteId && <CopyButton text={noteId} title="Copy note Id" />}
         </div>
       </div>
     </div>
