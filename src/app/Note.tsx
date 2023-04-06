@@ -14,7 +14,7 @@ import {
 import { SnippableContent } from "./SnippableContent";
 import { encodeBech32ID } from "nostr-mux/dist/core/utils";
 import { Nip36Protection } from "./Nip36Protection";
-import { NoteDropdownMenu } from "./NoteDropdownMenu";
+import { FaCheck, FaCopy } from "react-icons/fa";
 
 type Props = {
   note: Event;
@@ -34,6 +34,28 @@ function formatDatetime(date: Date, currentTime: Date) {
   }
 }
 
+const CopyButton = ({ text, title }: { text: string; title: string }) => {
+  const [isCopied, setIsCopied] = useState(false);
+  const handleClick = () => {
+    navigator.clipboard.writeText(text);
+    setIsCopied(true);
+    setTimeout(() => setIsCopied(false), 1000);
+  };
+
+  return (
+    <span
+      className={
+        "btn btn-primary btn-ghost btn-xs " +
+        (isCopied ? "text-success" : "text-neutral-400")
+      }
+      title={title}
+      onClick={handleClick}
+    >
+      {isCopied ? <FaCheck /> : <FaCopy />}
+    </span>
+  );
+};
+
 export const Note = ({ note }: Props) => {
   const app = useApp();
   const [profile, setProfile] = useState<Profile<GenericProfile>>();
@@ -43,8 +65,10 @@ export const Note = ({ note }: Props) => {
   }, [app.aps, note.pubkey]);
 
   const date = new Date(note.created_at * 1000);
-  const pubkeyUri = "nostr:" + encodeBech32ID("npub", note.pubkey);
-  const noteUri = "nostr:" + encodeBech32ID("note", note.id);
+  const npub = encodeBech32ID("npub", note.pubkey);
+  const noteId = encodeBech32ID("note", note.id);
+  const pubkeyUri = "nostr:" + npub;
+  const noteUri = "nostr:" + noteId;
 
   const handleNoteBodyClick: MouseEventHandler<HTMLDivElement> = (e) => {
     if (e.target instanceof HTMLAnchorElement) {
@@ -60,23 +84,30 @@ export const Note = ({ note }: Props) => {
         <div className="flex gap-3">
           <Avatar pubkeyUri={pubkeyUri} profile={profile} />
           <div className="flex flex-col w-full gap-2">
-            <div className="flex flex-row items-baseline">
-              <div className="flex-1 text-sm">
+            <div className="flex flex-row items-center">
+              <div className="flex-none text-sm">
                 <a href={pubkeyUri}>
                   {!profile && (
                     <div className="my-2 h-2 w-32 bg-slate-200 rounded animate-pulse"></div>
                   )}
+                </a>
+              </div>
+              <div className="flex-1">
+                <a href={pubkeyUri}>
                   <strong>{profile?.properties.displayName}</strong>{" "}
                   {profile?.properties.name && "@" + profile?.properties.name}
                 </a>
+                <span className="ml-1">
+                  {npub && <CopyButton text={npub} title="Copy author npub" />}
+                </span>
               </div>
               <div>
                 <span title={date.toISOString()} className="text-sm">
                   {formatDatetime(date, app.currentTime)}
                 </span>
               </div>
-              <div>
-                <NoteDropdownMenu note={note} />
+              <div className="ml-1">
+                {noteId && <CopyButton text={noteId} title="Copy note Id" />}
               </div>
             </div>
             <Nip36Protection note={note}>
