@@ -55,7 +55,7 @@ const CopyButton = ({ text, title }: { text: string; title: string }) => {
   } else {
     return (
       <span
-        className={"btn btn-primary btn-ghost btn-xs text-neutral-400"}
+        className={"btn btn-primary btn-ghost btn-xs"}
         title={title}
         onClick={handleClick}
       >
