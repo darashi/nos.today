@@ -42,18 +42,27 @@ const CopyButton = ({ text, title }: { text: string; title: string }) => {
     setTimeout(() => setIsCopied(false), 1000);
   };
 
-  return (
-    <span
-      className={
-        "btn btn-primary btn-ghost btn-xs " +
-        (isCopied ? "text-success" : "text-neutral-400")
-      }
-      title={title}
-      onClick={handleClick}
-    >
-      {isCopied ? <FaCheck /> : <FaCopy />}
-    </span>
-  );
+  if (isCopied) {
+    return (
+      <span
+        className={"btn btn-primary btn-ghost btn-xs text-success"}
+        title={title}
+        onClick={handleClick}
+      >
+        <FaCheck />
+      </span>
+    );
+  } else {
+    return (
+      <span
+        className={"btn btn-primary btn-ghost btn-xs text-neutral-400"}
+        title={title}
+        onClick={handleClick}
+      >
+        <FaCopy />
+      </span>
+    );
+  }
 };
 
 export const Note = ({ note }: Props) => {
