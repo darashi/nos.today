@@ -13,7 +13,6 @@ import {
 } from "date-fns";
 import { SnippableContent } from "./SnippableContent";
 import { encodeBech32ID } from "nostr-mux/dist/core/utils";
-import Link from "next/link";
 import { Nip36Protection } from "./Nip36Protection";
 
 type Props = {
@@ -62,13 +61,13 @@ export const Note = ({ note }: Props) => {
           <div className="flex flex-col w-full gap-2">
             <div className="flex flex-row">
               <div className="flex-1 text-sm">
-                <Link href={pubkeyUri}>
+                <a href={pubkeyUri}>
                   {!profile && (
                     <div className="my-2 h-2 w-32 bg-slate-200 rounded animate-pulse"></div>
                   )}
                   <strong>{profile?.properties.displayName}</strong>{" "}
                   {profile?.properties.name && "@" + profile?.properties.name}
-                </Link>
+                </a>
               </div>
               <div className="flex-none text-sm">
                 <Link href={noteUri}>

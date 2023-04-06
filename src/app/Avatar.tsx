@@ -13,7 +13,7 @@ export const Avatar = ({ pubkeyUri, profile }: Props) => {
   return (
     <div className="avatar placeholder">
       <div className={"w-14 h-14 rounded" + (profile ? "" : " bg-slate-200")}>
-        <Link href={pubkeyUri}>
+        <a href={pubkeyUri}>
           {profile?.properties.picture && (
             <img
               src={profile?.properties.picture}
@@ -21,7 +21,7 @@ export const Avatar = ({ pubkeyUri, profile }: Props) => {
               className={profile ? "" : "animate-pulse"}
             />
           )}
-        </Link>
+        </a>
       </div>
     </div>
   );
