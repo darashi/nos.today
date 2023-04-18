@@ -30,7 +30,7 @@ export const SnippableContent = ({ note, onNoteBodyClick }: Props) => {
     }
     return (
       <div>
-        <div onClick={onNoteBodyClick}>
+        <div onClick={onNoteBodyClick} className="cursor-pointer">
           {isExpanded
             ? note.content
             : note.content.slice(0, lengthThreshold) + "..."}
