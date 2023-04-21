@@ -98,15 +98,13 @@ export default function Search() {
     if (sortedNotes.length === 0) {
       return;
     }
-    const oldest = sortedNotes[sortedNotes.length - 1].created_at;
+    let oldest = sortedNotes[sortedNotes.length - 1].created_at;
+    if (oldest === 0) {
+      oldest = 1; // There seems to be a relay that treats 0 as unspecified?
+    }
     const subscription = app.mux?.subscribe({
       filters: [{ kinds: [1], search: query, limit, until: oldest } as any],
-      onEvent(e) {
-        if (e.length > 0) {
-          setPossiblyMoreAvailable(true);
-        }
-        addNotes(e);
-      },
+      onEvent: addNotes,
       onEose() {
         app.mux.unSubscribe(subscription);
       },
