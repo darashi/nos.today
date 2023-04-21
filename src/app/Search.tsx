@@ -2,7 +2,7 @@
 
 import { useRef, useState } from "react";
 import QueryForm from "./QueryForm";
-import { Mux, Event } from "nostr-mux";
+import { Mux, Event, RelayMessageEvent, EventMessage } from "nostr-mux";
 import { useApp } from "@/lib/App";
 import { Note } from "./Note";
 import Navbar from "./Navbar";
@@ -21,28 +21,34 @@ export default function Search() {
   const app = useApp();
   const [query, setQuery] = useState("");
   const [inputtingQuery, setInputtingQuery] = useState("");
+  const [possiblyMoreAvailable, setPossiblyMoreAvailable] = useState(false);
 
   const [notes, setNotes] = useState<Record<string, Event>>({});
 
   const subscriptionRef = useRef("");
+  const limit = 100;
+  const hardLimit = 5000;
+
+  function addNotes(items: RelayMessageEvent<EventMessage>[]) {
+    if (items.length > 0) {
+      setPossiblyMoreAvailable(true);
+    }
+
+    setNotes((prev) => {
+      let updated = { ...prev };
+      for (const item of items) {
+        updated[item.received.event.id] = item.received.event;
+      }
+      purgeOldNotes(updated, hardLimit);
+      return updated;
+    });
+  }
 
   function subscribe(mux: Mux, search: string) {
-    const limit = 100;
-    const hardLimit = 5000;
-
     return mux.subscribe({
-      filters: [{ kinds: [1], search: search, limit } as any],
+      filters: [{ kinds: [1], search, limit } as any],
 
-      onEvent: (e) => {
-        setNotes((prev) => {
-          let updated = { ...prev };
-          for (const item of e) {
-            updated[item.received.event.id] = item.received.event;
-          }
-          purgeOldNotes(updated, hardLimit);
-          return updated;
-        });
-      },
+      onEvent: addNotes,
 
       onRecovered: (relay) => {
         console.log(
@@ -63,6 +69,7 @@ export default function Search() {
 
   function handleSubmit(q: string) {
     setNotes({});
+    setPossiblyMoreAvailable(false);
     setQuery(q);
     if (!app.mux) {
       return;
@@ -85,6 +92,29 @@ export default function Search() {
   const sortedNotes = Object.values(notes).sort(
     (a: Event, b: Event) => b.created_at - a.created_at
   );
+
+  function handleMoreClick() {
+    setPossiblyMoreAvailable(false);
+    if (sortedNotes.length === 0) {
+      return;
+    }
+    const oldest = sortedNotes[sortedNotes.length - 1].created_at;
+    const subscription = app.mux?.subscribe({
+      filters: [{ kinds: [1], search: query, limit, until: oldest } as any],
+      onEvent(e) {
+        if (e.length > 0) {
+          setPossiblyMoreAvailable(true);
+        }
+        addNotes(e);
+      },
+      onEose() {
+        app.mux.unSubscribe(subscription);
+      },
+    });
+    setTimeout(() => {
+      app.mux.unSubscribe(subscription);
+    }, 10000);
+  }
 
   return (
     <>
@@ -116,6 +146,11 @@ export default function Search() {
             <Note note={note} key={note.id} />
           ))}
         </div>
+        {query && possiblyMoreAvailable && sortedNotes.length < hardLimit && (
+          <button className="my-5 link link-primary" onClick={handleMoreClick}>
+            More
+          </button>
+        )}
       </div>
     </>
   );
