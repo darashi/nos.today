@@ -1,11 +1,11 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import QueryForm from "./QueryForm";
+import QueryForm from "../QueryForm";
 import { Mux, Event, RelayMessageEvent, EventMessage } from "nostr-mux";
 import { useApp } from "@/lib/App";
 import { Note } from "./Note";
-import Navbar from "./Navbar";
+import Navbar from "../Navbar";
 import { useSearchParams, useRouter } from "next/navigation";
 
 const purgeOldNotes = (notes: Record<string, Event>, limit: number) => {
