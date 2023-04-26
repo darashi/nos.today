@@ -1,11 +1,12 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import QueryForm from "./QueryForm";
 import { Mux, Event, RelayMessageEvent, EventMessage } from "nostr-mux";
 import { useApp } from "@/lib/App";
 import { Note } from "./Note";
 import Navbar from "./Navbar";
+import { useSearchParams, useRouter } from "next/navigation";
 
 const purgeOldNotes = (notes: Record<string, Event>, limit: number) => {
   const sortedNotes = Object.values(notes).sort(
@@ -19,8 +20,10 @@ const purgeOldNotes = (notes: Record<string, Event>, limit: number) => {
 
 export default function Search() {
   const app = useApp();
-  const [query, setQuery] = useState("");
-  const [inputtingQuery, setInputtingQuery] = useState("");
+  const router = useRouter();
+  const params = useSearchParams();
+  const query = params.get("q") || "";
+  const [inputtingQuery, setInputtingQuery] = useState(query);
   const [possiblyMoreAvailable, setPossiblyMoreAvailable] = useState(false);
 
   const [notes, setNotes] = useState<Record<string, Event>>({});
@@ -44,7 +47,7 @@ export default function Search() {
     });
   }
 
-  function subscribe(mux: Mux, search: string) {
+  const subscribe = useCallback((mux: Mux, search: string) => {
     return mux.subscribe({
       filters: [{ kinds: [1], search, limit } as any],
 
@@ -65,28 +68,21 @@ export default function Search() {
         ];
       },
     });
-  }
+  }, []);
+
+  useEffect(() => {
+    if (query && app.mux) {
+      if (subscriptionRef.current) {
+        app.mux.unSubscribe(subscriptionRef.current);
+      }
+      subscriptionRef.current = subscribe(app.mux, query);
+    }
+  }, [app.mux, query, subscribe]);
 
   function handleSubmit(q: string) {
-    setNotes({});
-    setPossiblyMoreAvailable(false);
-    setQuery(q);
-    if (!app.mux) {
-      return;
-    }
-    if (subscriptionRef.current) {
-      app.mux.unSubscribe(subscriptionRef.current);
-    }
-    subscriptionRef.current = subscribe(app.mux, q);
-  }
-
-  function handleReset() {
-    setQuery("");
-    setInputtingQuery("");
-    setNotes({});
-    if (subscriptionRef.current) {
-      app.mux?.unSubscribe(subscriptionRef.current);
-    }
+    const params = new URLSearchParams();
+    params.set("q", q);
+    router.push("?" + params.toString(), { forceOptimisticNavigation: false });
   }
 
   const sortedNotes = Object.values(notes).sort(
@@ -116,7 +112,7 @@ export default function Search() {
 
   return (
     <>
-      <Navbar onClick={handleReset} />
+      <Navbar />
       <div className="container mx-auto mt-5 px-2">
         <QueryForm
           onChange={(q) => {
