@@ -20,10 +20,8 @@ const purgeOldNotes = (notes: Record<string, Event>, limit: number) => {
 
 export default function Search() {
   const app = useApp();
-  const router = useRouter();
   const params = useSearchParams();
   const query = params.get("q") || "";
-  const [inputtingQuery, setInputtingQuery] = useState(query);
   const [possiblyMoreAvailable, setPossiblyMoreAvailable] = useState(false);
 
   const [notes, setNotes] = useState<Record<string, Event>>({});
@@ -79,12 +77,6 @@ export default function Search() {
     }
   }, [app.mux, query, subscribe]);
 
-  function handleSubmit(q: string) {
-    const params = new URLSearchParams();
-    params.set("q", q);
-    router.push("?" + params.toString(), { forceOptimisticNavigation: false });
-  }
-
   const sortedNotes = Object.values(notes).sort(
     (a: Event, b: Event) => b.created_at - a.created_at
   );
@@ -111,41 +103,32 @@ export default function Search() {
   }
 
   return (
-    <>
-      <Navbar />
-      <div className="container mx-auto mt-5 px-2">
-        <QueryForm
-          onChange={(q) => {
-            setInputtingQuery(q);
-          }}
-          onSubmit={handleSubmit}
-          value={inputtingQuery}
-        ></QueryForm>
+    <div className="container mx-auto mt-5 px-2">
+      <QueryForm initialValue={query}></QueryForm>
 
-        <div className="mt-8">
-          {query && (
-            <div className="flex align-middle">
-              <div>
-                Search for <strong>{query}</strong> ({sortedNotes.length} hits)
-              </div>
-              <div className="relative flex h-3 w-3 ml-2 my-auto">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
-              </div>
+      <div className="mt-8">
+        {query && (
+          <div className="flex align-middle">
+            <div>
+              Search for <strong>{query}</strong> ({sortedNotes.length} hits)
             </div>
-          )}
-        </div>
-
-        <div className="mt-2">
-          {sortedNotes.map((note: Event) => (
-            <Note note={note} key={note.id} />
-          ))}
-        </div>
-        {query && possiblyMoreAvailable && sortedNotes.length < hardLimit && (
-          <button className="my-5 link link-primary" onClick={handleMoreClick}>
-            More
-          </button>
+            <div className="relative flex h-3 w-3 ml-2 my-auto">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+            </div>
+          </div>
         )}
       </div>
-    </>
+
+      <div className="mt-2">
+        {sortedNotes.map((note: Event) => (
+          <Note note={note} key={note.id} />
+        ))}
+      </div>
+      {query && possiblyMoreAvailable && sortedNotes.length < hardLimit && (
+        <button className="my-5 link link-primary" onClick={handleMoreClick}>
+          More
+        </button>
+      )}
+    </div>
   );
 }

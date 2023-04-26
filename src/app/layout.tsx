@@ -1,5 +1,6 @@
 import { AppProvider } from "@/lib/App";
 import "./globals.css";
+import Navbar from "./Navbar";
 
 export const metadata = {
   title: "nos.today",
@@ -14,7 +15,10 @@ export default function RootLayout({
   return (
     <html>
       <AppProvider>
-        <body>{children}</body>
+        <body>
+          <Navbar />
+          {children}
+        </body>
       </AppProvider>
     </html>
   );
