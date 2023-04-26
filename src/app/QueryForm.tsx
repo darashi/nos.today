@@ -39,7 +39,6 @@ export default function QueryForm({ initialValue }: Props) {
         className="input input-bordered w-full"
         value={query}
         onChange={(e) => setQuery(e.target.value)}
-        onFocus={(e) => e.target.select()}
       />
     </form>
   );
