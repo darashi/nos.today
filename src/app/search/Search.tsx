@@ -69,6 +69,7 @@ export default function Search() {
   }, []);
 
   useEffect(() => {
+    setNotes({});
     if (query && app.mux) {
       if (subscriptionRef.current) {
         app.mux.unSubscribe(subscriptionRef.current);
