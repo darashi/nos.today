@@ -1,14 +1,16 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
 type Props = {
-  value: string;
-  onSubmit: (query: string) => void;
-  onChange: (query: string) => void;
+  initialValue: string;
 };
 
-export default function QueryForm({ value, onSubmit, onChange }: Props) {
+export default function QueryForm({ initialValue }: Props) {
+  const router = useRouter();
+  const [query, setQuery] = useState(initialValue);
+
   const ref = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -17,7 +19,15 @@ export default function QueryForm({ value, onSubmit, onChange }: Props) {
 
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    onSubmit(value);
+    if (query === "") {
+      router.push("/");
+      return;
+    }
+    const params = new URLSearchParams();
+    params.set("q", query);
+    router.push("/search?" + params.toString(), {
+      forceOptimisticNavigation: false,
+    });
   }
 
   return (
@@ -27,9 +37,8 @@ export default function QueryForm({ value, onSubmit, onChange }: Props) {
         ref={ref}
         placeholder="What are you looking for?"
         className="input input-bordered w-full"
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        onFocus={(e) => e.target.select()}
+        value={query}
+        onChange={(e) => setQuery(e.target.value)}
       />
     </form>
   );

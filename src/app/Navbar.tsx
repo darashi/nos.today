@@ -2,19 +2,11 @@
 
 import Link from "next/link";
 
-type Props = {
-  onClick?: () => void;
-};
-
-export default function Navbar({ onClick }: Props) {
+export default function Navbar() {
   return (
     <div className="navbar bg-primary text-primary-content sticky top-0 z-20">
       <div className="flex-1">
-        <Link
-          href="/"
-          className="btn btn-ghost normal-case text-xl"
-          onClick={() => onClick?.()}
-        >
+        <Link href="/" className="btn btn-ghost normal-case text-xl">
           nos.today
         </Link>
       </div>

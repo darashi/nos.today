@@ -1,11 +1,12 @@
 "use client";
 
-import { useRef, useState } from "react";
-import QueryForm from "./QueryForm";
+import { useCallback, useEffect, useRef, useState } from "react";
+import QueryForm from "../QueryForm";
 import { Mux, Event, RelayMessageEvent, EventMessage } from "nostr-mux";
 import { useApp } from "@/lib/App";
 import { Note } from "./Note";
-import Navbar from "./Navbar";
+import Navbar from "../Navbar";
+import { useSearchParams, useRouter } from "next/navigation";
 
 const purgeOldNotes = (notes: Record<string, Event>, limit: number) => {
   const sortedNotes = Object.values(notes).sort(
@@ -19,8 +20,8 @@ const purgeOldNotes = (notes: Record<string, Event>, limit: number) => {
 
 export default function Search() {
   const app = useApp();
-  const [query, setQuery] = useState("");
-  const [inputtingQuery, setInputtingQuery] = useState("");
+  const params = useSearchParams();
+  const query = params.get("q") || "";
   const [possiblyMoreAvailable, setPossiblyMoreAvailable] = useState(false);
 
   const [notes, setNotes] = useState<Record<string, Event>>({});
@@ -44,7 +45,7 @@ export default function Search() {
     });
   }
 
-  function subscribe(mux: Mux, search: string) {
+  const subscribe = useCallback((mux: Mux, search: string) => {
     return mux.subscribe({
       filters: [{ kinds: [1], search, limit } as any],
 
@@ -65,29 +66,17 @@ export default function Search() {
         ];
       },
     });
-  }
+  }, []);
 
-  function handleSubmit(q: string) {
+  useEffect(() => {
     setNotes({});
-    setPossiblyMoreAvailable(false);
-    setQuery(q);
-    if (!app.mux) {
-      return;
+    if (query && app.mux) {
+      if (subscriptionRef.current) {
+        app.mux.unSubscribe(subscriptionRef.current);
+      }
+      subscriptionRef.current = subscribe(app.mux, query);
     }
-    if (subscriptionRef.current) {
-      app.mux.unSubscribe(subscriptionRef.current);
-    }
-    subscriptionRef.current = subscribe(app.mux, q);
-  }
-
-  function handleReset() {
-    setQuery("");
-    setInputtingQuery("");
-    setNotes({});
-    if (subscriptionRef.current) {
-      app.mux?.unSubscribe(subscriptionRef.current);
-    }
-  }
+  }, [app.mux, query, subscribe]);
 
   const sortedNotes = Object.values(notes).sort(
     (a: Event, b: Event) => b.created_at - a.created_at
@@ -115,41 +104,32 @@ export default function Search() {
   }
 
   return (
-    <>
-      <Navbar onClick={handleReset} />
-      <div className="container mx-auto mt-5 px-2">
-        <QueryForm
-          onChange={(q) => {
-            setInputtingQuery(q);
-          }}
-          onSubmit={handleSubmit}
-          value={inputtingQuery}
-        ></QueryForm>
+    <div className="container mx-auto mt-5 px-2">
+      <QueryForm initialValue={query}></QueryForm>
 
-        <div className="mt-8">
-          {query && (
-            <div className="flex align-middle">
-              <div>
-                Search for <strong>{query}</strong> ({sortedNotes.length} hits)
-              </div>
-              <div className="relative flex h-3 w-3 ml-2 my-auto">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
-              </div>
+      <div className="mt-8">
+        {query && (
+          <div className="flex align-middle">
+            <div>
+              Search for <strong>{query}</strong> ({sortedNotes.length} hits)
             </div>
-          )}
-        </div>
-
-        <div className="mt-2">
-          {sortedNotes.map((note: Event) => (
-            <Note note={note} key={note.id} />
-          ))}
-        </div>
-        {query && possiblyMoreAvailable && sortedNotes.length < hardLimit && (
-          <button className="my-5 link link-primary" onClick={handleMoreClick}>
-            More
-          </button>
+            <div className="relative flex h-3 w-3 ml-2 my-auto">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+            </div>
+          </div>
         )}
       </div>
-    </>
+
+      <div className="mt-2">
+        {sortedNotes.map((note: Event) => (
+          <Note note={note} key={note.id} />
+        ))}
+      </div>
+      {query && possiblyMoreAvailable && sortedNotes.length < hardLimit && (
+        <button className="my-5 link link-primary" onClick={handleMoreClick}>
+          More
+        </button>
+      )}
+    </div>
   );
 }
