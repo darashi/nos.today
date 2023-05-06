@@ -4,8 +4,6 @@ import { relays, searchRelays } from "@/lib/config";
 export default function Home() {
   return (
     <main>
-      <Navbar />
-
       <div className="container mx-auto mt-5 px-2 prose">
         <h1>About</h1>
 
