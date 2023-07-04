@@ -1,10 +1,9 @@
 "use client";
 
 import { Event } from "nostr-mux";
-import { marked } from "marked";
 import DOMPurify from "dompurify";
-import { parseReferences, nip19 } from "nostr-tools";
 import { MouseEventHandler } from "react";
+import { renderContent } from "@/lib/renderer/renderer";
 
 type Props = {
   note: Event;
@@ -24,27 +23,7 @@ if (typeof window !== "undefined") {
 }
 
 export const NoteContent = ({ note, onClick }: Props) => {
-  // Expand NIP-27
-  let content = note.content;
-  const parsed = parseReferences(note);
-  for (const ref of parsed) {
-    let bech32 = "";
-    if (ref.profile) {
-      bech32 = nip19.npubEncode(ref.profile.pubkey);
-    }
-    // TODO better embedding of references
-
-    if (bech32) {
-      const uri = "nostr:" + bech32;
-      const anchor = `<a href="${uri}">${bech32}</a>`;
-      content = content.replaceAll(ref.text, anchor);
-    }
-  }
-
-  const contentHTML = DOMPurify.sanitize(marked.parse(content), {
-    ALLOWED_URI_REGEXP:
-      /^(?:(?:(?:f|ht)tps?|mailto|tel|callto|sms|cid|xmpp|nostr):|[^a-z]|[a-z+.\-]+(?:[^a-z+.\-:]|$))/i,
-  });
+  const contentHTML = renderContent(note.content);
   return (
     <div
       className="cursor-pointer prose-a:text-primary"
