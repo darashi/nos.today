@@ -17,6 +17,10 @@ export default function QueryForm({ initialValue }: Props) {
     ref.current?.focus();
   }, []);
 
+  useEffect(() => {
+    setQuery(initialValue);
+  }, [initialValue]);
+
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     if (query === "") {
