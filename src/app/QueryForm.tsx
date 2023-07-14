@@ -25,9 +25,7 @@ export default function QueryForm({ initialValue }: Props) {
     }
     const params = new URLSearchParams();
     params.set("q", query);
-    router.push("/search?" + params.toString(), {
-      forceOptimisticNavigation: false,
-    });
+    router.push("/search?" + params.toString());
   }
 
   return (
