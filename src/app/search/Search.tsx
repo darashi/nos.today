@@ -5,8 +5,7 @@ import QueryForm from "../QueryForm";
 import { Mux, Event, RelayMessageEvent, EventMessage } from "nostr-mux";
 import { useApp } from "@/lib/App";
 import { Note } from "./Note";
-import Navbar from "../Navbar";
-import { useSearchParams, useRouter } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 
 const purgeOldNotes = (notes: Record<string, Event>, limit: number) => {
   const sortedNotes = Object.values(notes).sort(
