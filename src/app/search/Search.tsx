@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import QueryForm from "../QueryForm";
 import { Mux, Event, RelayMessageEvent, EventMessage } from "nostr-mux";
 import { useApp } from "@/lib/App";
@@ -17,10 +17,15 @@ const purgeOldNotes = (notes: Record<string, Event>, limit: number) => {
   }
 };
 
+function normalize(str: string): string {
+  return str.normalize("NFKC").toLowerCase();
+}
+
 export default function Search() {
   const app = useApp();
   const params = useSearchParams();
   const query = params.get("q") || "";
+  const queryTerms = useMemo(() => normalize(query).split(/\s+/), [query]);
   const [possiblyMoreAvailable, setPossiblyMoreAvailable] = useState(false);
 
   const [notes, setNotes] = useState<Record<string, Event>>({});
@@ -29,43 +34,55 @@ export default function Search() {
   const limit = 100;
   const hardLimit = 5000;
 
-  function addNotes(items: RelayMessageEvent<EventMessage>[]) {
-    if (items.length > 0) {
-      setPossiblyMoreAvailable(true);
-    }
-
-    setNotes((prev) => {
-      let updated = { ...prev };
-      for (const item of items) {
-        updated[item.received.event.id] = item.received.event;
+  const addNotes = useCallback(
+    (items: RelayMessageEvent<EventMessage>[]) => {
+      if (items.length > 0) {
+        setPossiblyMoreAvailable(true);
       }
-      purgeOldNotes(updated, hardLimit);
-      return updated;
-    });
-  }
 
-  const subscribe = useCallback((mux: Mux, search: string) => {
-    return mux.subscribe({
-      filters: [{ kinds: [1], search, limit } as any],
+      setNotes((prev) => {
+        let updated = { ...prev };
+        for (const item of items) {
+          const event = item.received.event;
+          // Relays may return events that do not actually match the query, so verify here.
+          const normalizedContent = normalize(event.content);
+          if (!queryTerms.every((term) => normalizedContent.includes(term))) {
+            continue;
+          }
+          updated[event.id] = event;
+        }
+        purgeOldNotes(updated, hardLimit);
+        return updated;
+      });
+    },
+    [queryTerms]
+  );
 
-      onEvent: addNotes,
+  const subscribe = useCallback(
+    (mux: Mux, search: string) => {
+      return mux.subscribe({
+        filters: [{ kinds: [1], search, limit } as any],
 
-      onRecovered: (relay) => {
-        console.log(
-          `relay(${relay.url}) was added or recovered. It joins subscription`
-        );
+        onEvent: addNotes,
 
-        return [
-          {
-            kinds: [1],
-            search: search,
-            limit,
-            since: Math.floor(Date.now() / 1000),
-          },
-        ];
-      },
-    });
-  }, []);
+        onRecovered: (relay) => {
+          console.log(
+            `relay(${relay.url}) was added or recovered. It joins subscription`
+          );
+
+          return [
+            {
+              kinds: [1],
+              search: search,
+              limit,
+              since: Math.floor(Date.now() / 1000),
+            },
+          ];
+        },
+      });
+    },
+    [addNotes]
+  );
 
   useEffect(() => {
     setNotes({});
