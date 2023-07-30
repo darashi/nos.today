@@ -75,7 +75,7 @@ export default function Search() {
               kinds: [1],
               search: search,
               limit,
-              since: Math.floor(Date.now() / 1000),
+              until: Math.floor(Date.now() / 1000),
             },
           ];
         },
