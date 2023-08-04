@@ -4,7 +4,7 @@ import { relays, searchRelays } from "@/lib/config";
 export default function Home() {
   return (
     <main>
-      <div className="container mx-auto mt-5 px-2 prose">
+      <div className="container mx-auto mt-5 px-2 prose break-words">
         <h1>About</h1>
 
         <p>
