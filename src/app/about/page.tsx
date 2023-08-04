@@ -1,4 +1,3 @@
-import Navbar from "../Navbar";
 import { relays, searchRelays } from "@/lib/config";
 
 export default function Home() {
