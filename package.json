@@ -18,6 +18,7 @@
     "dompurify": "^3.0.5",
     "eslint": "^8.44.0",
     "eslint-config-next": "^13.4.10",
+    "linkifyjs": "^4.1.2",
     "next": "^13.4.10",
     "nostr-mux": "^0.0.8",
     "nostr-tools": "^1.12.1",
