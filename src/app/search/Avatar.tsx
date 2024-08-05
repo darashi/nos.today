@@ -1,28 +1,27 @@
 /* eslint-disable @next/next/no-img-element */
 "use client";
 
-import Link from "next/link";
-import { GenericProfile, Profile } from "nostr-mux";
+import { Content } from "nostr-typedef";
 
 type Props = {
-  pubkeyUri: string;
-  profile: Profile<GenericProfile> | undefined;
+	pubkeyUri: string;
+	profile: Content.Metadata | undefined;
 };
 
 export const Avatar = ({ pubkeyUri, profile }: Props) => {
-  return (
-    <div className="avatar placeholder">
-      <div className={"w-14 h-14 rounded" + (profile ? "" : " bg-slate-200")}>
-        <a href={pubkeyUri}>
-          {profile?.properties.picture && (
-            <img
-              src={profile?.properties.picture}
-              alt={profile.properties.displayName}
-              className={profile ? "" : "animate-pulse"}
-            />
-          )}
-        </a>
-      </div>
-    </div>
-  );
+	return (
+		<div className="avatar placeholder">
+			<div className={"w-14 h-14 rounded" + (profile ? "" : " bg-slate-200")}>
+				<a href={pubkeyUri}>
+					{profile?.picture && (
+						<img
+							src={profile?.picture}
+							alt={profile.display_name}
+							className={profile ? "" : "animate-pulse"}
+						/>
+					)}
+				</a>
+			</div>
+		</div>
+	);
 };
