@@ -3,23 +3,24 @@ import "./globals.css";
 import Navbar from "./Navbar";
 
 export const metadata = {
-  title: "nos.today",
-  description: "nos.today",
+	title: "nos.today",
+	description: "nos.today",
 };
 
 export default function RootLayout({
-  children,
+	children,
 }: {
-  children: React.ReactNode;
+	children: React.ReactNode;
 }) {
-  return (
-    <html>
-      <AppProvider>
-        <body>
-          <Navbar />
-          {children}
-        </body>
-      </AppProvider>
-    </html>
-  );
+	return (
+		/* biome-ignore lint/a11y/useHtmlLang: the language varies depending on the search */
+		<html>
+			<AppProvider>
+				<body>
+					<Navbar />
+					{children}
+				</body>
+			</AppProvider>
+		</html>
+	);
 }

@@ -2,8 +2,7 @@
 "use client";
 
 import { useApp } from "@/lib/App";
-import { Event, GenericProfile, Profile } from "nostr-mux";
-import { MouseEventHandler, useEffect, useState } from "react";
+import { type MouseEventHandler, useState } from "react";
 import { Avatar } from "./Avatar";
 import {
 	differenceInMinutes,
@@ -12,13 +11,14 @@ import {
 	isSameDay,
 } from "date-fns";
 import { SnippableContent } from "./SnippableContent";
-import { encodeBech32ID } from "nostr-mux/dist/core/utils";
+import { nip19 } from "nostr-tools";
 import { Nip36Protection } from "./Nip36Protection";
 import { FaCheck, FaCopy } from "react-icons/fa";
+import type { Event, Content } from "nostr-typedef";
 
 type Props = {
 	note: Event;
-	profile: any;
+	profile: Content.Metadata | undefined;
 };
 
 function formatDatetime(date: Date, currentTime: Date) {
@@ -26,13 +26,14 @@ function formatDatetime(date: Date, currentTime: Date) {
 
 	if (sec < 60) {
 		return "<1m";
-	} else if (sec < 60 * 60) {
-		return differenceInMinutes(currentTime, date) + "m";
-	} else if (isSameDay(currentTime, date)) {
-		return format(date, "HH:mm");
-	} else {
-		return format(date, "yyyy-MM-dd");
 	}
+	if (sec < 60 * 60) {
+		return `${differenceInMinutes(currentTime, date)}m`;
+	}
+	if (isSameDay(currentTime, date)) {
+		return format(date, "HH:mm");
+	}
+	return format(date, "yyyy-MM-dd");
 }
 
 const CopyButton = ({ text, title }: { text: string; title: string }) => {
@@ -43,37 +44,35 @@ const CopyButton = ({ text, title }: { text: string; title: string }) => {
 		setTimeout(() => setIsCopied(false), 1000);
 	};
 
-	if (isCopied) {
-		return (
-			<span
-				className={"btn btn-primary btn-ghost btn-xs text-success"}
-				title={title}
-				onClick={handleClick}
-			>
-				<FaCheck />
-			</span>
-		);
-	} else {
-		return (
-			<span
-				className={"btn btn-primary btn-ghost btn-xs"}
-				title={title}
-				onClick={handleClick}
-			>
-				<FaCopy />
-			</span>
-		);
-	}
+	return isCopied ? (
+		<span
+			className={"btn btn-primary btn-ghost btn-xs text-success"}
+			title={title}
+			onClick={handleClick}
+			onKeyDown={handleClick}
+		>
+			<FaCheck />
+		</span>
+	) : (
+		<span
+			className={"btn btn-primary btn-ghost btn-xs"}
+			title={title}
+			onClick={handleClick}
+			onKeyDown={handleClick}
+		>
+			<FaCopy />
+		</span>
+	);
 };
 
 export const Note = ({ note, profile }: Props) => {
 	const app = useApp();
 
 	const date = new Date(note.created_at * 1000);
-	const npub = encodeBech32ID("npub", note.pubkey);
-	const noteId = encodeBech32ID("note", note.id);
-	const pubkeyUri = "nostr:" + npub;
-	const noteUri = "nostr:" + noteId;
+	const npub = nip19.npubEncode(note.pubkey);
+	const noteId = nip19.noteEncode(note.id);
+	const pubkeyUri = `nostr:${npub}`;
+	const noteUri = `nostr:${noteId}`;
 
 	const handleNoteBodyClick: MouseEventHandler<HTMLDivElement> = (e) => {
 		if (e.target instanceof HTMLAnchorElement) {
@@ -93,7 +92,7 @@ export const Note = ({ note, profile }: Props) => {
 							<div className="flex-none text-sm">
 								<a href={pubkeyUri}>
 									{!profile && (
-										<div className="my-2 h-2 w-32 bg-slate-200 rounded animate-pulse"></div>
+										<div className="my-2 h-2 w-32 bg-slate-200 rounded animate-pulse" />
 									)}
 								</a>
 							</div>
@@ -101,7 +100,7 @@ export const Note = ({ note, profile }: Props) => {
 							<div className="flex-1 mr-4">
 								<a href={pubkeyUri}>
 									<strong>{profile?.display_name}</strong>{" "}
-									{profile?.name && "@" + profile?.name}
+									{profile?.name && `@${profile.name}`}
 								</a>
 								<span className="ml-1">
 									{npub && <CopyButton text={npub} title="Copy author npub" />}

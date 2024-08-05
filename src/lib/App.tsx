@@ -1,6 +1,6 @@
 "use client";
 
-import { createRxNostr, RxNostr } from "rx-nostr";
+import { createRxNostr, type RxNostr } from "rx-nostr";
 import { verifier } from "rx-nostr-crypto";
 
 import { createContext, useContext, useEffect, useState } from "react";
@@ -15,7 +15,6 @@ const rxNostr = createRxNostr({
 	verifier,
 	connectionStrategy: "aggressive",
 });
-rxNostr.setDefaultRelays(relays);
 
 export const App = createContext<AppContext>({
 	rxNostr,
@@ -32,6 +31,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 		const timer = setInterval(() => {
 			setCurrentTime(new Date());
 		}, 10_000);
+
+		rxNostr.setDefaultRelays(relays);
 
 		return () => {
 			clearInterval(timer);

@@ -9,14 +9,13 @@ import {
 	batch,
 	createRxBackwardReq,
 	createRxForwardReq,
-	EventPacket,
+	type EventPacket,
 	latestEach,
 	uniq,
 } from "rx-nostr";
 import { bufferTime } from "rxjs/operators";
-import type { Subscription as RxSubscription } from "rxjs";
 import type { Event, Content } from "nostr-typedef";
-import { regularRelays, searchRelays } from "@/lib/config";
+import { searchRelays } from "@/lib/config";
 
 const purgeOldNotes = (notes: Record<string, Event>, limit: number) => {
 	const sortedNotes = Object.values(notes).sort(
@@ -43,8 +42,7 @@ export default function Search() {
 	const [profiles, setProfiles] = useState<Record<string, Content.Metadata>>(
 		{},
 	);
-
-	const rxSubscriptionRef = useRef<RxSubscription>();
+	const profileReqRef = useRef<ReturnType<typeof createRxBackwardReq>>();
 
 	const limit = 100;
 	const hardLimit = 5000;
@@ -66,69 +64,87 @@ export default function Search() {
 	);
 
 	useEffect(() => {
-		setNotes({});
+		const profileReq = createRxBackwardReq();
+		profileReqRef.current = profileReq;
 
-		if (query && app.rxNostr) {
-			const rxReq = createRxForwardReq("search");
-			const profileReq = createRxBackwardReq();
-
-			rxSubscriptionRef.current = app.rxNostr
-				.use(rxReq, { relays: searchRelays })
-				.pipe(uniq())
-				.subscribe((packet: EventPacket) => {
-					const { event } = packet;
-					profileReq.emit({ kinds: [0], authors: [event.pubkey], limit: 1 });
-
-					addEvent(event);
-				});
-
-			const batchedReq = profileReq.pipe(bufferTime(10), batch());
-
-			app.rxNostr
-				.use(batchedReq)
-				.pipe(latestEach(({ event }) => event.pubkey))
-				.subscribe((packet: EventPacket) => {
-					const { event } = packet;
-					const profile = JSON.parse(event.content);
-					setProfiles((prev) => ({ ...prev, [event.pubkey]: profile }));
-				});
-
-			rxReq.emit({ kinds: [1], search: query, limit });
-		}
+		const batchedReq = profileReq.pipe(bufferTime(50), batch());
+		const subscription = app.rxNostr
+			.use(batchedReq)
+			.pipe(latestEach(({ event }) => event.pubkey))
+			.subscribe((packet: EventPacket) => {
+				const { event } = packet;
+				const profile = JSON.parse(event.content);
+				setProfiles((prev) => ({ ...prev, [event.pubkey]: profile }));
+			});
 
 		return () => {
-			rxSubscriptionRef.current?.unsubscribe();
+			subscription.unsubscribe();
 		};
-	}, [app.rxNostr, query]);
+	}, [app.rxNostr]);
+
+	useEffect(() => {
+		setNotes({});
+
+		if (!query) {
+			return;
+		}
+
+		const rxReq = createRxForwardReq("search");
+		const subscription = app.rxNostr
+			.use(rxReq, { relays: searchRelays })
+			.pipe(uniq())
+			.subscribe((packet: EventPacket) => {
+				const { event } = packet;
+				profileReqRef.current?.emit({
+					kinds: [0],
+					authors: [event.pubkey],
+					limit: 1,
+				});
+
+				addEvent(event);
+				setPossiblyMoreAvailable(true);
+			});
+		rxReq.emit({ kinds: [1], search: query, limit });
+
+		return () => {
+			subscription.unsubscribe();
+		};
+	}, [app.rxNostr, query, addEvent]);
 
 	const sortedNotes = Object.values(notes).sort(
 		(a: Event, b: Event) => b.created_at - a.created_at,
 	);
 
 	function handleMoreClick() {
-		// 	setPossiblyMoreAvailable(false);
-		// 	if (sortedNotes.length === 0) {
-		// 		return;
-		// 	}
-		// 	let oldest = sortedNotes[sortedNotes.length - 1].created_at;
-		// 	if (oldest === 0) {
-		// 		oldest = 1; // There seems to be a relay that treats 0 as unspecified?
-		// 	}
-		// 	const subscription = app.mux?.subscribe({
-		// 		filters: [{ kinds: [1], search: query, limit, until: oldest } as any],
-		// 		onEvent: addNotes,
-		// 		onEose() {
-		// 			app.mux.unSubscribe(subscription);
-		// 		},
-		// 	});
-		// 	setTimeout(() => {
-		// 		app.mux.unSubscribe(subscription);
-		// 	}, 10000);
+		setPossiblyMoreAvailable(false);
+		if (sortedNotes.length === 0) {
+			return;
+		}
+		let oldest = sortedNotes[sortedNotes.length - 1].created_at;
+		if (oldest === 0) {
+			oldest = 1; // There seems to be a relay that treats 0 as unspecified?
+		}
+
+		const rxReq = createRxBackwardReq();
+		app.rxNostr
+			.use(rxReq, { relays: searchRelays })
+			.pipe(uniq())
+			.subscribe((packet: EventPacket) => {
+				const { event } = packet;
+				profileReqRef.current?.emit({
+					kinds: [0],
+					authors: [event.pubkey],
+					limit: 1,
+				});
+				addEvent(event);
+				setPossiblyMoreAvailable(true);
+			});
+		rxReq.emit({ kinds: [1], search: query, limit, until: oldest });
 	}
 
 	return (
 		<div className="container mx-auto mt-5 px-2">
-			<QueryForm initialValue={query}></QueryForm>
+			<QueryForm initialValue={query} />
 
 			<div className="mt-8">
 				{query && (
@@ -137,7 +153,7 @@ export default function Search() {
 							Search for <strong>{query}</strong> ({sortedNotes.length} hits)
 						</div>
 						<div className="relative flex h-3 w-3 ml-2 my-auto">
-							<span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+							<span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75" />
 						</div>
 					</div>
 				)}
@@ -149,7 +165,11 @@ export default function Search() {
 				))}
 			</div>
 			{query && possiblyMoreAvailable && sortedNotes.length < hardLimit && (
-				<button className="my-5 link link-primary" onClick={handleMoreClick}>
+				<button
+					type="button"
+					className="my-5 link link-primary"
+					onClick={handleMoreClick}
+				>
 					More
 				</button>
 			)}
