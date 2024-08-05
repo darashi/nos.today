@@ -1,9 +1,12 @@
+import { Suspense } from "react";
 import Search from "./Search";
 
 export default function Home() {
-  return (
-    <main>
-      <Search />
-    </main>
-  );
+	return (
+		<main>
+			<Suspense>
+				<Search />
+			</Suspense>
+		</main>
+	);
 }
