@@ -67,7 +67,19 @@ export default function Search() {
 		const profileReq = createRxBackwardReq();
 		profileReqRef.current = profileReq;
 
-		const batchedReq = profileReq.pipe(bufferTime(50), batch());
+		const batchedReq = profileReq.pipe(
+			bufferTime(50),
+			batch((a, b) => {
+				const aAuthors = a.flatMap((e) => e.authors);
+				const bAuthors = b.flatMap((e) => e.authors);
+				const authors = Array.from(new Set([...aAuthors, ...bAuthors])).filter(
+					(item) => item !== undefined,
+				);
+				const filter = { kinds: [0], authors };
+
+				return [filter];
+			}),
+		);
 		const subscription = app.rxNostr
 			.use(batchedReq)
 			.pipe(latestEach(({ event }) => event.pubkey))
