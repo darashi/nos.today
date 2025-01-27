@@ -70,7 +70,7 @@ export const Note = ({ note, profile }: Props) => {
 
 	const date = new Date(note.created_at * 1000);
 	const npub = nip19.npubEncode(note.pubkey);
-	const noteId = nip19.noteEncode(note.id);
+	const noteId = nip19.neventEncode({ id: note.id, kind: note.kind });
 	const pubkeyUri = `nostr:${npub}`;
 	const noteUri = `nostr:${noteId}`;
 
