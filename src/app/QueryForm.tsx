@@ -38,7 +38,7 @@ export default function QueryForm({ initialValue }: Props) {
 				type="text"
 				ref={ref}
 				placeholder="What are you looking for?"
-				className="input input-bordered w-full"
+				className="input input-bordered w-full input-lg focus:outline-none"
 				value={query}
 				onChange={(e) => setQuery(e.target.value)}
 			/>

@@ -1,6 +1,8 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+@plugin "daisyui" {
+  themes: dracula --default;
+}
+@plugin "@tailwindcss/typography";
 
 .note-content img {
   max-width: 100%;

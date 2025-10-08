@@ -42,7 +42,7 @@ export default function Search() {
 	const [profiles, setProfiles] = useState<Record<string, Content.Metadata>>(
 		{},
 	);
-	const profileReqRef = useRef<ReturnType<typeof createRxBackwardReq>>();
+	const profileReqRef = useRef<ReturnType<typeof createRxBackwardReq> | undefined>(undefined);
 
 	const limit = 100;
 	const hardLimit = 5000;

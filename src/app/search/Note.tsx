@@ -84,7 +84,7 @@ export const Note = ({ note, profile }: Props) => {
 
 	return (
 		<div key={note.id} className="card card-bordered shadow-lg my-3">
-			<div className="card-body break-all p-5">
+			<div className="card-body break-all p-5 text-base">
 				<div className="flex gap-3">
 					<Avatar pubkeyUri={pubkeyUri} profile={profile} />
 					<div className="flex flex-col w-full gap-2">

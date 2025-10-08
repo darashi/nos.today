@@ -16,7 +16,7 @@ export default function RootLayout({
 		/* biome-ignore lint/a11y/useHtmlLang: the language varies depending on the search */
 		<html>
 			<AppProvider>
-				<body>
+				<body className="text-lg">
 					<Navbar />
 					{children}
 				</body>
