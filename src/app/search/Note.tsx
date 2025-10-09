@@ -73,6 +73,7 @@ export const Note = ({ note, profile }: Props) => {
 	const noteId = nip19.neventEncode({ id: note.id, kind: note.kind });
 	const pubkeyUri = `nostr:${npub}`;
 	const noteUri = `nostr:${noteId}`;
+	const proxyName = note.tags.find((tag) => tag[0] === "proxy")?.[2];
 
 	const handleNoteBodyClick: MouseEventHandler<HTMLDivElement> = (e) => {
 		if (e.target instanceof HTMLAnchorElement) {
@@ -105,6 +106,11 @@ export const Note = ({ note, profile }: Props) => {
 								<span className="ml-1">
 									{npub && <CopyButton text={npub} title="Copy author npub" />}
 								</span>
+								{proxyName && (
+									<span className="ml-2 text-base-content/60">
+										via {proxyName}
+									</span>
+								)}
 							</div>
 
 							<div>
