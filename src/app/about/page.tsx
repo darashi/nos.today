@@ -38,7 +38,7 @@ export default function Home() {
 
 				<p>
 					<strong>wss://search.nos.today</strong> is an experimental instance of
-					searchnos, a pseudo-relay that supports NIP-50.{" "}
+					searchnos, a relay that supports NIP-50.{" "}
 					<a href="https://github.com/darashi/searchnos">
 						https://github.com/darashi/searchnos
 					</a>
