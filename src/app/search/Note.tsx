@@ -19,6 +19,7 @@ import type { Event, Content } from "nostr-typedef";
 type Props = {
 	note: Event;
 	profile: Content.Metadata | undefined;
+	queryTerms: string[];
 };
 
 function formatDatetime(date: Date, currentTime: Date) {
@@ -65,7 +66,7 @@ const CopyButton = ({ text, title }: { text: string; title: string }) => {
 	);
 };
 
-export const Note = ({ note, profile }: Props) => {
+export const Note = ({ note, profile, queryTerms }: Props) => {
 	const app = useApp();
 
 	const date = new Date(note.created_at * 1000);
@@ -122,6 +123,7 @@ export const Note = ({ note, profile }: Props) => {
 						<Nip36Protection note={note}>
 							<SnippableContent
 								note={note}
+								queryTerms={queryTerms}
 								onNoteBodyClick={handleNoteBodyClick}
 							/>
 						</Nip36Protection>

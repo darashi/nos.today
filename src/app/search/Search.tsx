@@ -35,7 +35,14 @@ export default function Search() {
 	const app = useApp();
 	const params = useSearchParams();
 	const query = params.get("q") || "";
-	const queryTerms = useMemo(() => normalize(query).split(/\s+/), [query]);
+	const queryTerms = useMemo(
+		() =>
+			normalize(query)
+				.trim()
+				.split(/\s+/)
+				.filter((term) => term.length > 0),
+		[query],
+	);
 	const [possiblyMoreAvailable, setPossiblyMoreAvailable] = useState(false);
 
 	const [notes, setNotes] = useState<Record<string, Event>>({});
@@ -173,7 +180,12 @@ export default function Search() {
 
 			<div className="mt-2">
 				{sortedNotes.map((note: Event) => (
-					<Note note={note} profile={profiles[note.pubkey]} key={note.id} />
+					<Note
+						note={note}
+						profile={profiles[note.pubkey]}
+						queryTerms={queryTerms}
+						key={note.id}
+					/>
 				))}
 			</div>
 			{query && possiblyMoreAvailable && sortedNotes.length < hardLimit && (

@@ -8,3 +8,8 @@
   max-width: 100%;
   height: 200px;
 }
+
+::highlight(search-result) {
+  background-color: var(--color-accent);
+  color: var(--color-accent-content);
+}
