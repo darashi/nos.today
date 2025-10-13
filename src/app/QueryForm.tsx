@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 
 type Props = {
 	initialValue: string;
@@ -10,12 +10,6 @@ type Props = {
 export default function QueryForm({ initialValue }: Props) {
 	const router = useRouter();
 	const [query, setQuery] = useState(initialValue);
-
-	const ref = useRef<HTMLInputElement>(null);
-
-	useEffect(() => {
-		ref.current?.focus();
-	}, []);
 
 	useEffect(() => {
 		setQuery(initialValue);
@@ -36,7 +30,8 @@ export default function QueryForm({ initialValue }: Props) {
 		<form onSubmit={handleSubmit}>
 			<input
 				type="text"
-				ref={ref}
+				// biome-ignore lint/a11y/noAutofocus: User should input query immediately
+				autoFocus
 				placeholder="What are you looking for?"
 				className="input input-bordered w-full input-lg focus:outline-none"
 				value={query}
