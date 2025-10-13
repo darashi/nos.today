@@ -31,7 +31,7 @@ export default function QueryForm({ initialValue }: Props) {
 			<input
 				type="text"
 				// biome-ignore lint/a11y/noAutofocus: User should input query immediately
-				autoFocus
+				autoFocus={initialValue === ""}
 				placeholder="What are you looking for?"
 				className="input input-bordered w-full input-lg focus:outline-none"
 				value={query}
