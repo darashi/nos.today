@@ -3,6 +3,7 @@
 import { useEffect, type MutableRefObject } from "react";
 
 const HIGHLIGHT_NAME = "search-result";
+const HIGHLIGHT_STYLE_ID = "search-highlight-style";
 
 type UseSearchHighlightOptions = {
 	enabled?: boolean;
@@ -54,6 +55,25 @@ export const useSearchHighlight = (
 	useEffect(() => {
 		if (!enabled || !hasHighlightSupport()) {
 			return;
+		}
+
+		let styleEl = document.getElementById(HIGHLIGHT_STYLE_ID) as
+			| HTMLStyleElement
+			| null;
+		if (!styleEl) {
+			styleEl = document.createElement("style");
+			styleEl.id = HIGHLIGHT_STYLE_ID;
+			styleEl.textContent = `
+:root ::highlight(${HIGHLIGHT_NAME}) {
+  background-color: var(--color-accent);
+  color: var(--color-accent-content);
+}
+:root :highlight(${HIGHLIGHT_NAME}) {
+  background-color: var(--color-accent);
+  color: var(--color-accent-content);
+}
+			`;
+			document.head.appendChild(styleEl);
 		}
 
 		const element = ref.current;
@@ -163,6 +183,7 @@ export const useSearchHighlight = (
 			for (const range of ranges) {
 				highlight?.delete(range);
 			}
+			// leave style element in place for reuse
 		};
 	}, [ref, queryTerms, enabled, dependencyKey]);
 };

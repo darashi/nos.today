@@ -17,6 +17,11 @@ import { bufferTime } from "rxjs/operators";
 import type { Event, Content } from "nostr-typedef";
 import { searchRelays } from "@/lib/config";
 
+type SearchState = {
+	notes: Record<string, Event>;
+	hasMore: boolean;
+};
+
 const purgeOldNotes = (notes: Record<string, Event>, limit: number) => {
 	const sortedNotes = Object.values(notes).sort(
 		(a: Event, b: Event) => a.created_at - b.created_at,
@@ -43,31 +48,46 @@ export default function Search() {
 				.filter((term) => term.length > 0),
 		[query],
 	);
-	const [possiblyMoreAvailable, setPossiblyMoreAvailable] = useState(false);
 
-	const [notes, setNotes] = useState<Record<string, Event>>({});
-	const [profiles, setProfiles] = useState<Record<string, Content.Metadata>>(
+	const [searchState, setSearchState] = useState<Record<string, SearchState>>(
 		{},
 	);
+	const [profiles, setProfiles] = useState<Record<string, Content.Metadata>>({});
 	const profileReqRef = useRef<ReturnType<typeof createRxBackwardReq> | undefined>(undefined);
+
+	const currentState = searchState[query] ?? { notes: {}, hasMore: false };
+	const { notes, hasMore } = currentState;
+	const updateCurrentState = useCallback(
+		(updater: (prev: SearchState) => SearchState) => {
+			setSearchState((prev) => {
+				const prevState = prev[query] ?? { notes: {}, hasMore: false };
+				const nextState = updater(prevState);
+				if (nextState === prevState) {
+					return prev;
+				}
+				return { ...prev, [query]: nextState };
+			});
+		},
+		[query],
+	);
 
 	const limit = 100;
 	const hardLimit = 5000;
 
 	const addEvent = useCallback(
 		(event: Event) => {
-			setNotes((prev) => {
-				const updated = { ...prev };
+			updateCurrentState((prev) => {
+				const updated = { ...prev.notes };
 				// Relays may return events that do not actually match the query, so verify here.
 				const normalizedContent = normalize(event.content);
 				if (queryTerms.every((term) => normalizedContent.includes(term))) {
 					updated[event.id] = event;
 				}
 				purgeOldNotes(updated, hardLimit);
-				return updated;
+				return { ...prev, notes: updated, hasMore: true };
 			});
 		},
-		[queryTerms],
+		[queryTerms, updateCurrentState],
 	);
 
 	useEffect(() => {
@@ -102,7 +122,7 @@ export default function Search() {
 	}, [app.rxNostr]);
 
 	useEffect(() => {
-		setNotes({});
+		updateCurrentState(() => ({ notes: {}, hasMore: false }));
 
 		if (!query) {
 			return;
@@ -121,7 +141,6 @@ export default function Search() {
 				});
 
 				addEvent(event);
-				setPossiblyMoreAvailable(true);
 			});
 		rxReq.emit({ kinds: [1], search: query, limit });
 
@@ -135,7 +154,7 @@ export default function Search() {
 	);
 
 	function handleMoreClick() {
-		setPossiblyMoreAvailable(false);
+		updateCurrentState((prev) => ({ ...prev, hasMore: false }));
 		if (sortedNotes.length === 0) {
 			return;
 		}
@@ -156,7 +175,6 @@ export default function Search() {
 					limit: 1,
 				});
 				addEvent(event);
-				setPossiblyMoreAvailable(true);
 			});
 		rxReq.emit({ kinds: [1], search: query, limit, until: oldest });
 	}
@@ -188,7 +206,7 @@ export default function Search() {
 					/>
 				))}
 			</div>
-			{query && possiblyMoreAvailable && sortedNotes.length < hardLimit && (
+			{query && hasMore && sortedNotes.length < hardLimit && (
 				<button
 					type="button"
 					className="my-5 link link-primary"

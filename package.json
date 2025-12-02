@@ -6,7 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint",
+    "lint": "eslint .",
     "test": "jest"
   },
   "dependencies": {
@@ -18,9 +18,9 @@
     "date-fns": "^4.1.0",
     "dompurify": "^3.3.0",
     "eslint": "^9.39.1",
-    "eslint-config-next": "^15.5.6",
+    "eslint-config-next": "^16.0.6",
     "linkifyjs": "^4.3.2",
-    "next": "^15.5.6",
+    "next": "^16.0.6",
     "nostr-tools": "^2.18.2",
     "nostr-typedef": "^0.13.0",
     "react": "^19.2.0",
