@@ -1,5 +1,3 @@
-"use client";
-
 import { createRxNostr, type RxNostr } from "rx-nostr";
 import { verifier } from "rx-nostr-crypto";
 

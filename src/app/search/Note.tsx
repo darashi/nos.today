@@ -1,5 +1,3 @@
-"use client";
-
 import { useApp } from "@/lib/App";
 import { type MouseEventHandler, useState } from "react";
 import { Avatar } from "./Avatar";

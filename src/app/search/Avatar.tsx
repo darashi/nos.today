@@ -1,6 +1,3 @@
-/* eslint-disable @next/next/no-img-element */
-"use client";
-
 import { Content } from "nostr-typedef";
 
 type Props = {

@@ -1,5 +1,3 @@
-"use client";
-
 import type { Event } from "nostr-typedef";
 import DOMPurify from "dompurify";
 import { type MouseEventHandler, useRef } from "react";

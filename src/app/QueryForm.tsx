@@ -1,6 +1,4 @@
-"use client";
-
-import { useRouter } from "next/navigation";
+import { useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 
 type Props = {
@@ -8,7 +6,7 @@ type Props = {
 };
 
 export default function QueryForm({ initialValue }: Props) {
-	const router = useRouter();
+	const navigate = useNavigate();
 	const [query, setQuery] = useState(initialValue);
 
 	useEffect(() => {
@@ -18,12 +16,12 @@ export default function QueryForm({ initialValue }: Props) {
 	function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
 		e.preventDefault();
 		if (query === "") {
-			router.push("/");
+			navigate("/");
 			return;
 		}
 		const params = new URLSearchParams();
 		params.set("q", query);
-		router.push(`/search?${params.toString()}`);
+		navigate(`/search?${params.toString()}`);
 	}
 
 	return (

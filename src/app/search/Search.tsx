@@ -1,10 +1,8 @@
-"use client";
-
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import QueryForm from "../QueryForm";
 import { useApp } from "@/lib/App";
 import { Note } from "./Note";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams } from "react-router-dom";
 import {
 	batch,
 	createRxBackwardReq,
@@ -38,7 +36,7 @@ function normalize(str: string): string {
 
 export default function Search() {
 	const app = useApp();
-	const params = useSearchParams();
+	const [params] = useSearchParams();
 	const query = params.get("q") || "";
 	const queryTerms = useMemo(
 		() =>

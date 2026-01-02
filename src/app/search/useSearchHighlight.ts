@@ -1,5 +1,3 @@
-"use client";
-
 import { useEffect, type MutableRefObject } from "react";
 
 const HIGHLIGHT_NAME = "search-result";
