@@ -5,6 +5,14 @@ import tseslint from "typescript-eslint";
 export default defineConfig([
   js.configs.recommended,
   ...tseslint.configs.recommended,
+  {
+    files: ["jest.config.js", "postcss.config.js"],
+    languageOptions: {
+      globals: {
+        module: "readonly",
+      },
+    },
+  },
   globalIgnores([
     "dist/**",
     "build/**",
