@@ -6,7 +6,7 @@ export default defineConfig([
   js.configs.recommended,
   ...tseslint.configs.recommended,
   {
-    files: ["jest.config.js", "postcss.config.js"],
+    files: ["postcss.config.js"],
     languageOptions: {
       globals: {
         module: "readonly",

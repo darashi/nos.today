@@ -1,3 +1,5 @@
+import { expect, test } from "vitest";
+
 import { renderContent } from "./renderer";
 
 test("regular note", () => {
