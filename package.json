@@ -6,7 +6,7 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "lint": "eslint .",
+    "lint": "oxlint",
     "test": "vitest run"
   },
   "dependencies": {
@@ -29,15 +29,14 @@
     "rx-nostr-crypto": "^3.1.3"
   },
   "devDependencies": {
-    "@eslint/js": "^10.0.1",
     "@tailwindcss/typography": "^0.5.20",
     "@vitejs/plugin-react": "^6.0.5",
-    "eslint": "^10.8.1",
     "jsdom": "^30.0.1",
     "linkify-string": "^4.3.3",
+    "oxlint": "^1.78.0",
+    "oxlint-tsgolint": "^7.0.2001",
     "postcss": "^8.5.26",
-    "typescript": "^5.9.3",
-    "typescript-eslint": "^8.67.0",
+    "typescript": "^7.0.2",
     "vite": "^8.2.1",
     "vitest": "^4.1.10"
   }

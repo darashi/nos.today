@@ -16,12 +16,12 @@ export default function QueryForm({ initialValue }: Props) {
 	function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
 		e.preventDefault();
 		if (query === "") {
-			navigate("/");
+			void navigate("/");
 			return;
 		}
 		const params = new URLSearchParams();
 		params.set("q", query);
-		navigate(`/search?${params.toString()}`);
+		void navigate(`/search?${params.toString()}`);
 	}
 
 	return (

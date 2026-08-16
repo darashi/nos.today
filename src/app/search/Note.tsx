@@ -37,7 +37,7 @@ function formatDatetime(date: Date, currentTime: Date) {
 const CopyButton = ({ text, title }: { text: string; title: string }) => {
 	const [isCopied, setIsCopied] = useState(false);
 	const handleClick = () => {
-		navigator.clipboard.writeText(text);
+		void navigator.clipboard.writeText(text);
 		setIsCopied(true);
 		setTimeout(() => setIsCopied(false), 1000);
 	};
