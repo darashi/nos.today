@@ -7,7 +7,7 @@ type Props = {
 
 export const Avatar = ({ pubkeyUri, profile }: Props) => {
 	return (
-		<div className="avatar placeholder">
+		<div className="avatar placeholder self-start">
 			<div className={"w-14 h-14 rounded" + (profile ? "" : " bg-slate-200")}>
 				<a href={pubkeyUri}>
 					{profile?.picture && (
