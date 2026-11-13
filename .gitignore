@@ -30,3 +30,10 @@ yarn-error.log*
 
 # typescript
 *.tsbuildinfo
+
+# Cloudflare
+.cloudflare
+.wrangler
+.dev.vars*
+!.dev.vars.example
+!.env.example
