@@ -9,18 +9,17 @@ export type SearchWindow = {
 	since: number;
 	until: number;
 	relays: RelayPage[];
-	known: Event[];
 };
 
 export function initialWindow(relays: string[], until: number): SearchWindow {
-	return { since: 0, until, relays: relays.map((url) => ({ url })), known: [] };
+	return { since: 0, until, relays: relays.map((url) => ({ url })) };
 }
 
 function partition(window: SearchWindow, cuts: number[]) {
 	const starts = [window.since, ...cuts.filter((t) => t > window.since && t <= window.until)];
 	return starts.map((since, index) => {
 		const until = (starts[index + 1] ?? window.until + 1) - 1;
-		return { ...window, since, until, known: window.known.filter((e) => since <= e.created_at && e.created_at <= until) };
+		return { ...window, since, until };
 	});
 }
 
@@ -42,23 +41,21 @@ export function prioritizeDate(windows: SearchWindow[], time: number) {
 	return index + (start > window.since ? 1 : 0);
 }
 
+// A nonempty first response can reveal a silent relay cap below the requested limit.
+export function isExhausted(relay: RelayPage, count: number) {
+	return count === 0 || (relay.limit !== undefined && count < relay.limit);
+}
+
 // A full relevance-ranked response can omit matches anywhere in the interval.
 export function resolveWindow(window: SearchWindow, replies: Event[][]) {
 	const { since, until } = window;
-	const seen = new Map(window.known.map((event) => [event.id, event]));
 	const fullRelays: RelayPage[] = [];
-	const exhausted: string[] = [];
 	let splitAt = since + 1;
 
 	for (const [index, events] of replies.entries()) {
 		const relay = window.relays[index];
-		for (const event of events) seen.set(event.id, event);
-		// Relays may silently cap the first response below the requested limit.
+		if (isExhausted(relay, events.length)) continue;
 		const limit = relay.limit ?? Math.min(pageSize, events.length);
-		if (!events.length || events.length < limit) {
-			exhausted.push(relay.url);
-			continue;
-		}
 		if (since === until && limit >= maxNotes) continue;
 		fullRelays.push({ url: relay.url, limit: since === until ? Math.min(limit * 2, maxNotes) : limit });
 		// Use the median as a split hint only. Both sides will be searched.
@@ -70,15 +67,8 @@ export function resolveWindow(window: SearchWindow, replies: Event[][]) {
 		}
 	}
 
-	const known = [...seen.values()];
-	const remaining: SearchWindow[] = [];
-	if (!fullRelays.length) return { notes: known, remaining, exhausted };
-
-	if (since === until) {
-		remaining.push({ ...window, known, relays: fullRelays });
-	} else {
-		// Keep the pending intervals in chronological order. Nostr time bounds are inclusive.
-		remaining.push(...partition({ ...window, relays: fullRelays, known }, [splitAt]));
-	}
-	return { notes: [], remaining, exhausted };
+	if (!fullRelays.length) return [];
+	const pending = { ...window, relays: fullRelays };
+	// Keep the pending intervals in chronological order. Nostr time bounds are inclusive.
+	return since === until ? [pending] : partition(pending, [splitAt]);
 }

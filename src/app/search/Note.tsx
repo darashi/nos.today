@@ -1,5 +1,5 @@
 import { useApp } from "@/lib/App";
-import { type MouseEventHandler, useState } from "react";
+import { memo, type MouseEventHandler, useState } from "react";
 import { Avatar } from "./Avatar";
 import {
 	differenceInMinutes,
@@ -63,7 +63,7 @@ const CopyButton = ({ text, title }: { text: string; title: string }) => {
 	);
 };
 
-export const Note = ({ note, profile, queryTerms }: Props) => {
+export const Note = memo(function Note({ note, profile, queryTerms }: Props) {
 	const app = useApp();
 
 	const date = new Date(note.created_at * 1000);
@@ -132,4 +132,4 @@ export const Note = ({ note, profile, queryTerms }: Props) => {
 			</div>
 		</div>
 	);
-};
+});

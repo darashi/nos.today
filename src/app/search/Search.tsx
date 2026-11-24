@@ -16,7 +16,7 @@ import { asapScheduler, EMPTY, forkJoin, Subscription } from "rxjs";
 import { bufferTime, catchError, filter, map, observeOn, tap, toArray } from "rxjs/operators";
 import type { Event, Content } from "nostr-typedef";
 import { searchRelays } from "@/lib/config";
-import { initialWindow, maxNotes, pageSize, prioritizeDate, resolveWindow } from "./searchHistory";
+import { initialWindow, isExhausted, maxNotes, pageSize, prioritizeDate, resolveWindow } from "./searchHistory";
 import { coverageSpans, recordCoverage, type CoverageSpan } from "./searchCoverage";
 
 function normalize(str: string): string {
@@ -84,8 +84,7 @@ function SearchResults({ query }: { query: string }) {
 
 		const subscriptions = new Subscription();
 		const events = new Map<string, Event>();
-		const overview = initialWindow(searchRelays, Math.floor(Date.now() / 1000));
-		const windows = [overview];
+		const windows = [initialWindow(searchRelays, Math.floor(Date.now() / 1000))];
 		const coverageEdges = new Map<number, number>();
 		const historyRequests = new Map<string, { id: string; received: number; limit: number }>();
 		const acknowledged = new Set<string>();
@@ -146,9 +145,10 @@ function SearchResults({ query }: { query: string }) {
 			loading = true;
 			historyRequests.clear();
 			acknowledged.clear();
-			const failed = new Set<string>();
 			const { since, until } = window;
-			const requests = window.relays.map(({ url, limit = pageSize }) => {
+			const requests = window.relays.map((relay) => {
+				const { url, limit = pageSize } = relay;
+				let failed = false;
 				const req = createRxOneshotReq({
 					filters: { kinds: [1], search: query, since, until, limit },
 				});
@@ -156,25 +156,25 @@ function SearchResults({ query }: { query: string }) {
 					uniq(),
 					map(({ event }) => event),
 					filter((event) => event.created_at >= since && event.created_at <= until),
-					tap((event) => {
-						if (window === overview) addEvent(event);
-					}),
+					tap(addEvent),
 					catchError(() => {
-						failed.add(url);
+						failed = true;
 						return EMPTY;
 					}),
 					toArray(),
+					// Let the raw EOSE listener run before checking this relay's reply.
+					observeOn(asapScheduler),
+					tap((events) => {
+						if (!failed && acknowledged.has(new URL(url).href) && isExhausted(relay, events.length)) {
+							recordCoverage(coverageEdges, window, 1);
+							setCoverage(coverageSpans(coverageEdges, searchRelays.length));
+						}
+					}),
 				);
 			});
-			// Let all listeners see the final EOSE, including for an empty response.
-			subscriptions.add(forkJoin(requests).pipe(observeOn(asapScheduler)).subscribe((replies) => {
+			subscriptions.add(forkJoin(requests).subscribe((replies) => {
 				loading = false;
-				const { notes, remaining, exhausted } = resolveWindow(window, replies);
-				const confirmed = exhausted.filter((url) => !failed.has(url) && acknowledged.has(new URL(url).href)).length;
-				if (confirmed) {
-					recordCoverage(coverageEdges, window, confirmed);
-					setCoverage(coverageSpans(coverageEdges, searchRelays.length));
-				}
+				const remaining = resolveWindow(window, replies);
 				windows.splice(index, 1, ...remaining);
 				if (remaining.length) {
 					nextPageRef.current = requestMore;
@@ -183,7 +183,6 @@ function SearchResults({ query }: { query: string }) {
 					return;
 				}
 				moreRequested = false;
-				for (const event of notes) addEvent(event);
 				if (windows.length && events.size < maxNotes) nextPageRef.current = requestMore;
 				updateResults();
 				loadPage();
