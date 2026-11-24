@@ -1,43 +1,36 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import QueryForm from "../QueryForm";
 import { useApp } from "@/lib/App";
-import { Note } from "./Note";
+import SearchTimeline from "./SearchTimeline";
 import { useSearchParams } from "react-router-dom";
 import {
 	batch,
 	createRxBackwardReq,
 	createRxForwardReq,
+	createRxOneshotReq,
 	type EventPacket,
 	latestEach,
 	uniq,
 } from "rx-nostr";
-import { bufferTime } from "rxjs/operators";
+import { asapScheduler, EMPTY, forkJoin, Subscription } from "rxjs";
+import { bufferTime, catchError, filter, map, observeOn, tap, toArray } from "rxjs/operators";
 import type { Event, Content } from "nostr-typedef";
 import { searchRelays } from "@/lib/config";
-
-type SearchState = {
-	notes: Record<string, Event>;
-	hasMore: boolean;
-};
-
-const purgeOldNotes = (notes: Record<string, Event>, limit: number) => {
-	const sortedNotes = Object.values(notes).sort(
-		(a: Event, b: Event) => a.created_at - b.created_at,
-	);
-
-	for (let i = 0; i < sortedNotes.length - limit; i++) {
-		delete notes[sortedNotes[i].id];
-	}
-};
+import { initialWindow, maxNotes, pageSize, prioritizeDate, resolveWindow } from "./searchHistory";
+import { coverageSpans, recordCoverage, type CoverageSpan } from "./searchCoverage";
 
 function normalize(str: string): string {
 	return str.normalize("NFKC").toLowerCase();
 }
 
 export default function Search() {
-	const app = useApp();
 	const [params] = useSearchParams();
 	const query = params.get("q") || "";
+	return <SearchResults key={query} query={query} />;
+}
+
+function SearchResults({ query }: { query: string }) {
+	const { rxNostr } = useApp();
 	const queryTerms = useMemo(
 		() =>
 			normalize(query)
@@ -47,46 +40,13 @@ export default function Search() {
 		[query],
 	);
 
-	const [searchState, setSearchState] = useState<Record<string, SearchState>>(
-		{},
-	);
+	const [notes, setNotes] = useState<Event[]>([]);
+	const [coverage, setCoverage] = useState<CoverageSpan[]>([]);
 	const [profiles, setProfiles] = useState<Record<string, Content.Metadata>>({});
 	const profileReqRef = useRef<ReturnType<typeof createRxBackwardReq> | undefined>(undefined);
-
-	const currentState = searchState[query] ?? { notes: {}, hasMore: false };
-	const { notes, hasMore } = currentState;
-	const updateCurrentState = useCallback(
-		(updater: (prev: SearchState) => SearchState) => {
-			setSearchState((prev) => {
-				const prevState = prev[query] ?? { notes: {}, hasMore: false };
-				const nextState = updater(prevState);
-				if (nextState === prevState) {
-					return prev;
-				}
-				return { ...prev, [query]: nextState };
-			});
-		},
-		[query],
-	);
-
-	const limit = 100;
-	const hardLimit = 5000;
-
-	const addEvent = useCallback(
-		(event: Event) => {
-			updateCurrentState((prev) => {
-				const updated = { ...prev.notes };
-				// Relays may return events that do not actually match the query, so verify here.
-				const normalizedContent = normalize(event.content);
-				if (queryTerms.every((term) => normalizedContent.includes(term))) {
-					updated[event.id] = event;
-				}
-				purgeOldNotes(updated, hardLimit);
-				return { ...prev, notes: updated, hasMore: true };
-			});
-		},
-		[queryTerms, updateCurrentState],
-	);
+	const endRef = useRef<HTMLDivElement>(null);
+	const nextPageRef = useRef<(() => void) | undefined>(undefined);
+	const viewDatesRef = useRef<((times: number[]) => void) | undefined>(undefined);
 
 	useEffect(() => {
 		const profileReq = createRxBackwardReq();
@@ -105,7 +65,7 @@ export default function Search() {
 				return [filter];
 			}),
 		);
-		const subscription = app.rxNostr
+		const subscription = rxNostr
 			.use(batchedReq)
 			.pipe(latestEach(({ event }) => event.pubkey))
 			.subscribe((packet: EventPacket) => {
@@ -117,65 +77,155 @@ export default function Search() {
 		return () => {
 			subscription.unsubscribe();
 		};
-	}, [app.rxNostr]);
+	}, [rxNostr]);
 
 	useEffect(() => {
-		updateCurrentState(() => ({ notes: {}, hasMore: false }));
+		if (!query || !searchRelays.length) return;
 
-		if (!query) {
-			return;
+		const subscriptions = new Subscription();
+		const events = new Map<string, Event>();
+		const overview = initialWindow(searchRelays, Math.floor(Date.now() / 1000));
+		const windows = [overview];
+		const coverageEdges = new Map<number, number>();
+		const historyRequests = new Map<string, { id: string; received: number; limit: number }>();
+		const acknowledged = new Set<string>();
+		let viewDates: number[] = [];
+		let moreRequested = true;
+		let frame: number | undefined;
+		let loading = false;
+
+		// A one-shot request also completes on timeout or CLOSED. Only EOSE confirms a range.
+		subscriptions.add(rxNostr.createOutgoingMessageObservable().subscribe(({ to, message }) => {
+			if (message[0] === "REQ" && message[2]?.search === query && message[2].limit) {
+				historyRequests.set(to, { id: message[1], received: 0, limit: message[2].limit });
+			}
+		}));
+		subscriptions.add(rxNostr.createAllMessageObservable().subscribe((packet) => {
+			if (packet.type !== "EOSE" && packet.type !== "EVENT") return;
+			const request = historyRequests.get(packet.from);
+			if (!request || request.id !== packet.subId) return;
+			if (packet.type === "EVENT") request.received++;
+			else if (request.received < request.limit) {
+				acknowledged.add(new URL(packet.from).href);
+			}
+		}));
+
+		function updateResults() {
+			if (frame !== undefined) return;
+			frame = requestAnimationFrame(() => {
+				frame = undefined;
+				const sorted = Array.from(events.values()).sort((a, b) => b.created_at - a.created_at);
+				for (const note of sorted.splice(maxNotes)) events.delete(note.id);
+				setNotes(sorted);
+			});
 		}
 
-		const rxReq = createRxForwardReq("search");
-		const subscription = app.rxNostr
-			.use(rxReq, { relays: searchRelays })
-			.pipe(uniq())
-			.subscribe((packet: EventPacket) => {
-				const { event } = packet;
-				profileReqRef.current?.emit({
-					kinds: [0],
-					authors: [event.pubkey],
-					limit: 1,
-				});
+		function addEvent(event: Event) {
+			if (events.has(event.id)) return;
+			// Some search relays return notes that do not match all the terms.
+			const content = normalize(event.content);
+			if (!queryTerms.every((term) => content.includes(term))) return;
+			events.set(event.id, event);
+			profileReqRef.current?.emit({ kinds: [0], authors: [event.pubkey], limit: 1 });
+			updateResults();
+		}
 
-				addEvent(event);
+		function loadPage() {
+			if (loading || !windows.length || events.size >= maxNotes) return;
+			let index = -1;
+			for (const time of viewDates) {
+				index = prioritizeDate(windows, time);
+				if (index >= 0) break;
+			}
+			if (index < 0) {
+				if (!moreRequested) return;
+				index = windows.length - 1;
+			}
+			const window = windows[index];
+			nextPageRef.current = undefined;
+			loading = true;
+			historyRequests.clear();
+			acknowledged.clear();
+			const failed = new Set<string>();
+			const { since, until } = window;
+			const requests = window.relays.map(({ url, limit = pageSize }) => {
+				const req = createRxOneshotReq({
+					filters: { kinds: [1], search: query, since, until, limit },
+				});
+				return rxNostr.use(req, { relays: [url] }).pipe(
+					uniq(),
+					map(({ event }) => event),
+					filter((event) => event.created_at >= since && event.created_at <= until),
+					tap((event) => {
+						if (window === overview) addEvent(event);
+					}),
+					catchError(() => {
+						failed.add(url);
+						return EMPTY;
+					}),
+					toArray(),
+				);
 			});
-		rxReq.emit({ kinds: [1], search: query, limit });
+			// Let all listeners see the final EOSE, including for an empty response.
+			subscriptions.add(forkJoin(requests).pipe(observeOn(asapScheduler)).subscribe((replies) => {
+				loading = false;
+				const { notes, remaining, exhausted } = resolveWindow(window, replies);
+				const confirmed = exhausted.filter((url) => !failed.has(url) && acknowledged.has(new URL(url).href)).length;
+				if (confirmed) {
+					recordCoverage(coverageEdges, window, confirmed);
+					setCoverage(coverageSpans(coverageEdges, searchRelays.length));
+				}
+				windows.splice(index, 1, ...remaining);
+				if (remaining.length) {
+					nextPageRef.current = requestMore;
+					loadPage();
+					if (!loading) updateResults();
+					return;
+				}
+				moreRequested = false;
+				for (const event of notes) addEvent(event);
+				if (windows.length && events.size < maxNotes) nextPageRef.current = requestMore;
+				updateResults();
+				loadPage();
+			}));
+		}
+
+		function requestMore() {
+			moreRequested = true;
+			loadPage();
+		}
+		viewDatesRef.current = (times) => {
+			viewDates = times;
+			loadPage();
+		};
+
+		const live = createRxForwardReq();
+		subscriptions.add(rxNostr.use(live, { relays: searchRelays }).pipe(uniq()).subscribe(
+			({ event }) => addEvent(event),
+		));
+		live.emit({ kinds: [1], search: query, limit: 0 });
+		loadPage();
 
 		return () => {
-			subscription.unsubscribe();
+			nextPageRef.current = undefined;
+			viewDatesRef.current = undefined;
+			subscriptions.unsubscribe();
+			if (frame !== undefined) cancelAnimationFrame(frame);
 		};
-	}, [app.rxNostr, query, addEvent]);
+	}, [rxNostr, query, queryTerms]);
 
-	const sortedNotes = Object.values(notes).sort(
-		(a: Event, b: Event) => b.created_at - a.created_at,
-	);
-
-	function handleMoreClick() {
-		updateCurrentState((prev) => ({ ...prev, hasMore: false }));
-		if (sortedNotes.length === 0) {
-			return;
-		}
-		let oldest = sortedNotes[sortedNotes.length - 1].created_at;
-		if (oldest === 0) {
-			oldest = 1; // There seems to be a relay that treats 0 as unspecified?
-		}
-
-		const rxReq = createRxBackwardReq();
-		app.rxNostr
-			.use(rxReq, { relays: searchRelays })
-			.pipe(uniq())
-			.subscribe((packet: EventPacket) => {
-				const { event } = packet;
-				profileReqRef.current?.emit({
-					kinds: [0],
-					authors: [event.pubkey],
-					limit: 1,
-				});
-				addEvent(event);
-			});
-		rxReq.emit({ kinds: [1], search: query, limit, until: oldest });
-	}
+	useEffect(() => {
+		const end = endRef.current;
+		if (!end || !nextPageRef.current) return;
+		const observer = new IntersectionObserver(([entry]) => {
+			if (entry.isIntersecting) {
+				observer.disconnect();
+				nextPageRef.current?.();
+			}
+		}, { rootMargin: "0px 0px 480px" });
+		observer.observe(end);
+		return () => observer.disconnect();
+	}, [notes]);
 
 	return (
 		<div className="container mx-auto mt-5 px-2">
@@ -185,7 +235,7 @@ export default function Search() {
 				{query && (
 					<div className="flex align-middle">
 						<div>
-							Search for <strong>{query}</strong> ({sortedNotes.length} hits)
+							Search for <strong>{query}</strong> ({notes.length} hits)
 						</div>
 						<div className="relative flex h-3 w-3 ml-2 my-auto">
 							<span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75" />
@@ -194,25 +244,8 @@ export default function Search() {
 				)}
 			</div>
 
-			<div className="mt-2">
-				{sortedNotes.map((note: Event) => (
-					<Note
-						note={note}
-						profile={profiles[note.pubkey]}
-						queryTerms={queryTerms}
-						key={note.id}
-					/>
-				))}
-			</div>
-			{query && hasMore && sortedNotes.length < hardLimit && (
-				<button
-					type="button"
-					className="my-5 link link-primary"
-					onClick={handleMoreClick}
-				>
-					More
-				</button>
-			)}
+			<SearchTimeline notes={notes} coverage={coverage} profiles={profiles} queryTerms={queryTerms} onViewDates={(times) => viewDatesRef.current?.(times)} />
+			<div ref={endRef} aria-hidden="true" className="h-px" />
 		</div>
 	);
 }

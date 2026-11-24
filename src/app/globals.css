@@ -8,3 +8,94 @@
   max-width: 100%;
   height: 200px;
 }
+
+:root:has(.search-timeline) {
+  scrollbar-width: none;
+}
+
+.date-scrubber {
+  --scale-opacity: 0;
+  --crossfade-duration: 360ms;
+  width: 1.125rem;
+}
+
+.date-scrubber[data-visible],
+.date-scrubber[data-dragging],
+.date-scrubber:has(input:focus-visible) {
+  --scale-opacity: 1;
+  width: 4rem;
+}
+
+.date-scale {
+  opacity: var(--scale-opacity);
+}
+
+.date-thumb {
+  opacity: calc(1 - var(--scale-opacity));
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .date-scale,
+  .date-thumb {
+    transition: opacity var(--crossfade-duration) ease-in-out;
+  }
+
+  .date-coverage-label {
+    transition: display var(--crossfade-duration) allow-discrete;
+  }
+}
+
+.date-track {
+  position: absolute;
+  inset: 2rem 0 1rem auto;
+  width: 4rem;
+}
+
+.date-coverage [data-coverage="unconfirmed"] {
+  background: var(--color-base-content);
+  opacity: 0.08;
+}
+
+.date-coverage [data-coverage="partial"] {
+  background: repeating-linear-gradient(135deg, var(--color-primary) 0 3px, transparent 3px 6px);
+  opacity: 0.24;
+}
+
+.date-coverage [data-coverage="loaded"] {
+  background: var(--color-primary);
+  opacity: 0.38;
+}
+
+.date-coverage-label {
+  display: none;
+}
+
+.date-scrubber[data-dragging] .date-coverage-label,
+.date-scrubber:has(input:focus-visible) .date-coverage-label {
+  display: inline;
+}
+
+@media (hover: hover) {
+  .date-scrubber:hover {
+    --scale-opacity: 1;
+    width: 4rem;
+  }
+
+  .date-scrubber:hover .date-coverage-label {
+    display: inline;
+  }
+}
+
+.date-cursor {
+  background: var(--color-primary);
+}
+
+.date-preview {
+  color: var(--color-base-content);
+  background: var(--color-base-300);
+}
+
+.date-scrubber:has(input:focus-visible) .date-preview {
+  outline: 2px solid var(--color-primary);
+  outline-offset: -2px;
+}
